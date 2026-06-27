@@ -668,3 +668,484 @@ export function useSessionRecovery(onRecovered?: () => void) {
 //   </div>
 // )}
 ```
+
+---
+
+## Priority Fee UX — Explain Why Users Pay More
+
+Priority fees are confusing to users. Explain them clearly and make the value obvious.
+
+```tsx
+// components/PriorityFeeSelector.tsx
+import { useState } from "react";
+
+const PRIORITY_LEVELS = [
+  { label: "Normal", multiplier: 1, description: "Standard processing time", estimatedTime: "~30s" },
+  { label: "Fast", multiplier: 2, description: "Faster confirmation during congestion", estimatedTime: "~15s" },
+  { label: "Turbo", multiplier: 5, description: "Highest priority, instant confirmation", estimatedTime: "~5s" },
+];
+
+export function PriorityFeeSelector({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  const [showDetails, setShowDetails] = useState(false);
+
+  return (
+    <div className="space-y-3">
+      <div className="flex justify-between items-center">
+        <label className="text-sm font-medium">Transaction speed</label>
+        <button
+          onClick={() => setShowDetails(!showDetails)}
+          className="text-xs text-primary underline"
+        >
+          {showDetails ? "Hide details" : "What is this?"}
+        </button>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2">
+        {PRIORITY_LEVELS.map((level) => (
+          <button
+            key={level.label}
+            onClick={() => onChange(level.multiplier)}
+            className={`p-3 rounded-lg border text-center transition-colors ${
+              value === level.multiplier
+                ? "border-primary bg-primary/10"
+                : "border-border hover:border-primary/50"
+            }`}
+          >
+            <div className="font-medium text-sm">{level.label}</div>
+            <div className="text-xs text-muted-foreground mt-1">{level.estimatedTime}</div>
+          </button>
+        ))}
+      </div>
+
+      {showDetails && (
+        <div className="text-xs text-muted-foreground p-3 bg-muted rounded-lg">
+          <p className="font-medium mb-2">Priority fees tip validators to process your transaction faster.</p>
+          <p>During network congestion, transactions with higher priority fees confirm first. You only pay this if the network is busy.</p>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+---
+
+## Slippage Tolerance UI — Protect Users from Price Impact
+
+```tsx
+// components/SlippageSelector.tsx
+import { useState } from "react";
+
+const SLIPPAGE_OPTIONS = [
+  { label: "0.1%", value: 0.001, description: "Best price, may fail during volatility" },
+  { label: "0.5%", value: 0.005, description: "Balanced" },
+  { label: "1%", value: 0.01, description: "Higher tolerance, more likely to succeed" },
+  { label: "Custom", value: null, description: "Set your own" },
+];
+
+export function SlippageSelector({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  const [customValue, setCustomValue] = useState("");
+  const [showCustom, setShowCustom] = useState(false);
+
+  const handleCustomSubmit = () => {
+    const parsed = parseFloat(customValue);
+    if (!isNaN(parsed) && parsed > 0 && parsed <= 50) {
+      onChange(parsed / 100);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <label className="text-sm font-medium">Slippage tolerance</label>
+      
+      <div className="flex gap-2">
+        {SLIPPAGE_OPTIONS.slice(0, 3).map((option) => (
+          <button
+            key={option.label}
+            onClick={() => onChange(option.value!)}
+            className={`flex-1 py-2 px-3 rounded-lg border text-sm transition-colors ${
+              value === option.value
+                ? "border-primary bg-primary/10"
+                : "border-border hover:border-primary/50"
+            }`}
+          >
+            {option.label}
+          </button>
+        ))}
+        
+        <button
+          onClick={() => setShowCustom(!showCustom)}
+          className={`flex-1 py-2 px-3 rounded-lg border text-sm transition-colors ${
+            showCustom ? "border-primary bg-primary/10" : "border-border hover:border-primary/50"
+          }`}
+        >
+          Custom
+        </button>
+      </div>
+
+      {showCustom && (
+        <div className="flex gap-2 items-center">
+          <input
+            type="number"
+            placeholder="0.5"
+            value={customValue}
+            onChange={(e) => setCustomValue(e.target.value)}
+            className="flex-1 px-3 py-2 rounded-lg border text-sm"
+            min="0"
+            max="50"
+            step="0.1"
+          />
+          <span className="text-sm text-muted-foreground">%</span>
+          <button
+            onClick={handleCustomSubmit}
+            className="px-3 py-2 bg-primary text-primary-foreground rounded-lg text-sm"
+          >
+            Set
+          </button>
+        </div>
+      )}
+
+      <Alert>
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Price impact warning</AlertTitle>
+        <AlertDescription>
+          Higher slippage tolerance may result in receiving less than expected. 
+          Lower tolerance may cause transactions to fail during price movement.
+        </AlertDescription>
+      </Alert>
+    </div>
+  );
+}
+```
+
+---
+
+## Multi-Step Transaction Flow — Approval + Execute Pattern
+
+```tsx
+// hooks/useMultiStepTransaction.ts
+import { useState, useCallback } from "react";
+import { useTransactionToast } from "./useTransactionToast";
+
+type Step = "idle" | "approving" | "approved" | "executing" | "done" | "failed";
+
+export function useMultiStepTransaction() {
+  const [step, setStep] = useState<Step>("idle");
+  const { trackTransaction } = useTransactionToast();
+
+  const execute = useCallback(async (
+    approveFn: () => Promise<string>,
+    executeFn: (approvalSig: string) => Promise<string>
+  ) => {
+    try {
+      setStep("approving");
+      const approvalSig = await trackTransaction(
+        approveFn,
+        { buildingMessage: "Preparing approval...", successMessage: "Approved!" }
+      );
+      
+      setStep("approved");
+      
+      setStep("executing");
+      const executeSig = await trackTransaction(
+        () => executeFn(approvalSig),
+        { buildingMessage: "Executing transaction...", successMessage: "Transaction complete!" }
+      );
+      
+      setStep("done");
+      return executeSig;
+    } catch (error) {
+      setStep("failed");
+      throw error;
+    }
+  }, [trackTransaction]);
+
+  const reset = useCallback(() => setStep("idle"), []);
+
+  return { step, execute, reset };
+}
+```
+
+---
+
+## Confirmation Dialog Pattern — Show Before Wallet Popup
+
+```tsx
+// components/TransactionConfirmDialog.tsx
+import { SimulationResult } from "@/lib/simulateTransaction";
+
+interface Props {
+  open: boolean;
+  simulation: SimulationResult | null;
+  onConfirm: () => void;
+  onCancel: () => void;
+  title: string;
+  description?: string;
+}
+
+export function TransactionConfirmDialog({ 
+  open, 
+  simulation, 
+  onConfirm, 
+  onCancel,
+  title,
+  description 
+}: Props) {
+  if (!open || !simulation) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onCancel()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          {description && <DialogDescription>{description}</DialogDescription>}
+        </DialogHeader>
+
+        <div className="space-y-4 py-4">
+          {simulation.tokenChanges.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-sm font-medium">You'll receive</p>
+              {simulation.tokenChanges.map((change, i) => (
+                <div key={i} className="flex justify-between items-center">
+                  <span className="text-sm">{change.symbol || change.mint.slice(0, 8)}</span>
+                  <span className={`font-medium ${change.delta > 0 ? "text-green-600" : "text-red-600"}`}>
+                    {change.delta > 0 ? "+" : ""}{change.delta.toFixed(4)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="flex justify-between items-center text-sm">
+            <span className="text-muted-foreground">Estimated network fee</span>
+            <span>~0.000005 SOL</span>
+          </div>
+
+          {!simulation.success && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Transaction will fail</AlertTitle>
+              <AlertDescription>{simulation.error}</AlertDescription>
+            </Alert>
+          )}
+
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertTitle>Review carefully</AlertTitle>
+            <AlertDescription>
+              This transaction cannot be undone. Make sure you understand what will happen.
+            </AlertDescription>
+          </Alert>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onCancel}>Cancel</Button>
+          <Button onClick={onConfirm} disabled={!simulation.success}>Confirm in wallet</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+```
+
+---
+
+## Empty State Pattern — Guide Users When No Data
+
+```tsx
+// components/EmptyState.tsx
+interface Props {
+  title: string;
+  description: string;
+  action?: { label: string; onClick: () => void };
+  icon?: React.ReactNode;
+}
+
+export function EmptyState({ title, description, action, icon }: Props) {
+  return (
+    <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+      {icon && <div className="text-muted-foreground mb-4">{icon}</div>}
+      <h3 className="text-lg font-semibold mb-2">{title}</h3>
+      <p className="text-sm text-muted-foreground max-w-sm mb-6">{description}</p>
+      {action && <Button onClick={action.onClick}>{action.label}</Button>}
+    </div>
+  );
+}
+```
+
+---
+
+## Success Celebration Pattern — Reward Completed Actions
+
+```tsx
+// components/SuccessCelebration.tsx
+import { useEffect, useState } from "react";
+import Confetti from "react-confetti";
+
+interface Props {
+  show: boolean;
+  title: string;
+  description: string;
+  action?: { label: string; onClick: () => void };
+  onClose: () => void;
+}
+
+export function SuccessCelebration({ show, title, description, action, onClose }: Props) {
+  const [confettiActive, setConfettiActive] = useState(false);
+
+  useEffect(() => {
+    if (show) {
+      setConfettiActive(true);
+      const timer = setTimeout(() => setConfettiActive(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [show]);
+
+  if (!show) return null;
+
+  return (
+    <>
+      {confettiActive && (
+        <Confetti recycle={false} numberOfPieces={200} gravity={0.3} initialVelocityY={-20} />
+      )}
+      <Dialog open={show} onOpenChange={onClose}>
+        <DialogContent className="text-center">
+          <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+            <CheckCircle className="h-8 w-8 text-green-600" />
+          </div>
+          <DialogHeader>
+            <DialogTitle className="text-xl">{title}</DialogTitle>
+            <DialogDescription>{description}</DialogDescription>
+          </DialogHeader>
+          {action && <Button onClick={action.onClick} className="mt-4">{action.label}</Button>}
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+```
+
+---
+
+## Transaction Queue — Handle Multiple Sequential Transactions
+
+```tsx
+// hooks/useTransactionQueue.ts
+import { useState, useCallback, useEffect } from "react";
+import { useTransactionToast } from "./useTransactionToast";
+
+interface QueuedTransaction {
+  id: string;
+  name: string;
+  execute: () => Promise<string>;
+}
+
+export function useTransactionQueue() {
+  const [queue, setQueue] = useState<QueuedTransaction[]>([]);
+  const [current, setCurrent] = useState<QueuedTransaction | null>(null);
+  const [completed, setCompleted] = useState<string[]>([]);
+  const [failed, setFailed] = useState<{ id: string; error: string }[]>([]);
+  const { trackTransaction } = useTransactionToast();
+
+  const add = useCallback((tx: QueuedTransaction) => {
+    setQueue(prev => [...prev, tx]);
+  }, []);
+
+  const process = useCallback(async () => {
+    if (queue.length === 0 || current) return;
+
+    const next = queue[0];
+    setCurrent(next);
+    setQueue(prev => prev.slice(1));
+
+    try {
+      const sig = await trackTransaction(
+        next.execute,
+        { successMessage: `${next.name} complete!` }
+      );
+      setCompleted(prev => [...prev, sig]);
+    } catch (error: any) {
+      setFailed(prev => [...prev, { id: next.id, error: error.message }]);
+    } finally {
+      setCurrent(null);
+    }
+  }, [queue, current, trackTransaction]);
+
+  useEffect(() => {
+    if (queue.length > 0 && !current) {
+      process();
+    }
+  }, [queue, current, process]);
+
+  const clear = useCallback(() => {
+    setQueue([]);
+    setCurrent(null);
+    setCompleted([]);
+    setFailed([]);
+  }, []);
+
+  return {
+    queue,
+    current,
+    completed,
+    failed,
+    add,
+    clear,
+    isProcessing: current !== null,
+    total: queue.length + completed.length + failed.length,
+  };
+}
+```
+
+---
+
+## Loading State Variants — Beyond Skeletons
+
+```tsx
+// components/LoadingStates.tsx
+
+export function CardSkeleton() {
+  return (
+    <div className="border rounded-lg p-4 space-y-3 animate-pulse">
+      <div className="h-4 w-3/4 bg-muted rounded" />
+      <div className="h-3 w-1/2 bg-muted rounded" />
+      <div className="h-8 w-full bg-muted rounded mt-4" />
+    </div>
+  );
+}
+
+export function TableRowSkeleton({ cols = 4 }: { cols?: number }) {
+  return (
+    <tr className="animate-pulse">
+      {Array.from({ length: cols }).map((_, i) => (
+        <td key={i} className="p-4">
+          <div className="h-4 w-full bg-muted rounded" />
+        </td>
+      ))}
+    </tr>
+  );
+}
+
+export function LoadingSpinner({ text }: { text?: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center gap-3 py-8">
+      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      {text && <p className="text-sm text-muted-foreground">{text}</p>}
+    </div>
+  );
+}
+
+export function ProgressBar({ progress, text }: { progress: number; text?: string }) {
+  return (
+    <div className="space-y-2">
+      {text && <p className="text-sm text-muted-foreground">{text}</p>}
+      <div className="h-2 bg-muted rounded-full overflow-hidden">
+        <div 
+          className="h-full bg-primary transition-all duration-300"
+          style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+```

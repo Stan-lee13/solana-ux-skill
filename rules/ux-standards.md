@@ -106,3 +106,169 @@ Required:
 
 Target: WCAG 2.1 AA
 ```
+
+---
+
+## RULE 9: Error Boundaries for React Components
+
+Every React component tree must have an error boundary to prevent white-screen crashes.
+
+```typescript
+// components/ErrorBoundary.tsx
+class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean}> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error("React error:", error, errorInfo);
+    // Log to error tracking service
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-4 text-center">
+          <p className="text-destructive">Something went wrong. Please refresh the page.</p>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+```
+
+---
+
+## RULE 10: Form Validation Before Transaction
+
+Never submit a transaction without validating all form inputs first.
+
+```typescript
+// Required validation pattern:
+function validateTransactionForm(data: FormData): {valid: boolean; error?: string} {
+  if (!data.amount || parseFloat(data.amount) <= 0) {
+    return { valid: false, error: "Amount must be greater than 0" };
+  }
+  if (parseFloat(data.amount) > 1000000) {
+    return { valid: false, error: "Amount exceeds maximum allowed" };
+  }
+  if (!data.recipient || !isValidPublicKey(data.recipient)) {
+    return { valid: false, error: "Invalid recipient address" };
+  }
+  return { valid: true };
+}
+```
+
+---
+
+## RULE 11: No Sensitive Data in URLs or Logs
+
+Never include private keys, seed phrases, or sensitive user data in:
+- URL parameters
+- Console.log statements
+- Error messages sent to tracking
+- LocalStorage (use secure storage for secrets)
+
+```typescript
+// ❌ NEVER:
+console.log("Private key:", privateKey);
+localStorage.setItem("private_key", privateKey);
+
+// ✅ ALWAYS:
+console.log("Wallet connected");
+await secureStorage.setItem("wallet_auth", authToken);
+```
+
+---
+
+## RULE 12: Responsive Breakpoints Must Be Mobile-First
+
+Design for mobile first (375px), then expand to desktop.
+
+```css
+/* Mobile-first approach */
+.container {
+  padding: 1rem;
+}
+
+@media (min-width: 768px) {
+  .container {
+    padding: 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container {
+    padding: 3rem;
+  }
+}
+```
+
+---
+
+## RULE 13: All External Links Must Open in New Tab
+
+Links to external sites (explorers, docs, social) must open in new tabs.
+
+```tsx
+// ❌ WRONG:
+<a href="https://solscan.io/tx/{sig}">View transaction</a>
+
+// ✅ RIGHT:
+<a href="https://solscan.io/tx/{sig}" target="_blank" rel="noopener noreferrer">
+  View transaction ↗
+</a>
+```
+
+---
+
+## RULE 14: Loading States Must Have Timeouts
+
+All loading states must have a timeout to prevent infinite spinners.
+
+```typescript
+const [isLoading, setIsLoading] = useState(false);
+const [timeout, setTimeoutId] = useState<NodeJS.Timeout | null>(null);
+
+function startLoading() {
+  setIsLoading(true);
+  const id = setTimeout(() => {
+    setIsLoading(false);
+    setError("Request timed out. Please try again.");
+  }, 30000); // 30 second timeout
+  setTimeoutId(id);
+}
+
+function stopLoading() {
+  if (timeout) clearTimeout(timeout);
+  setIsLoading(false);
+}
+```
+
+---
+
+## RULE 15: Copy to Clipboard Must Provide Feedback
+
+When copying addresses or signatures, show confirmation feedback.
+
+```tsx
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <button onClick={handleCopy}>
+      {copied ? "Copied!" : "Copy"}
+    </button>
+  );
+}
+```
+

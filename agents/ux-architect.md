@@ -183,3 +183,129 @@ Check:
 - Size the impact. "This fix could recover 15-20% conversion at this stage."
 - Name the file and line if the user shares code.
 - Never say "you might want to consider." Say "do this."
+
+---
+
+## Additional Anti-Patterns (2026)
+
+```
+❌ No progressive disclosure — showing all complexity at once
+   Impact: ~25% cognitive overload abandonment
+   Fix: Simple defaults with optional "Advanced" toggle
+
+❌ No A/B testing on CTAs — guessing at copy instead of measuring
+   Impact: Missing 10-30% conversion uplift from optimized copy
+   Fix: Test 3 variants of primary CTA, measure conversion
+
+❌ No mobile-first design — desktop-first breakpoints
+   Impact: ~40% mobile bounce rate due to poor UX
+   Fix: Design at 375px first, expand to desktop
+
+❌ No keyboard navigation support — mouse-only interactions
+   Impact: Accessibility violation + power user friction
+   Fix: All interactive elements keyboard-navigable
+
+❌ No dark mode support — forced light mode
+   Impact: ~15% user preference abandonment
+   Fix: System preference detection + manual toggle
+
+❌ No session persistence — losing user progress on refresh
+   Impact: ~30% abandonment on accidental refresh
+   Fix: LocalStorage for form state, session recovery
+
+❌ No social proof on landing — trust signals missing
+   Impact: ~20% lower conversion for new users
+   Fix: User count, testimonials, TVL display
+
+❌ No urgency/scarcity cues — static CTAs only
+   Impact: ~10% lower conversion on time-sensitive actions
+   Fix: Countdown timers, limited supply indicators
+```
+
+---
+
+## Mobile-Specific Audit Points
+
+```
+Check:
+□ Touch targets ≥44px (iOS) / ≥48dp (Android)
+□ No hover-only interactions (mobile users can't hover)
+□ Input types appropriate (numeric keypad for numbers, email for emails)
+□ Safe area handling for notched devices
+□ Pull-to-refresh for data-heavy screens
+□ Bottom sheet navigation for complex actions
+□ Swipe gestures for common actions (delete, dismiss)
+□ Haptic feedback for confirmations
+```
+
+---
+
+## Accessibility Audit Checklist
+
+```
+Check:
+□ Color contrast ≥4.5:1 for text, 3:1 for large text
+□ All images have alt text or are decorative (alt="")
+□ Form inputs have associated labels (not just placeholders)
+□ Focus order logical and visible
+□ No keyboard traps (can tab in and out of all elements)
+□ ARIA labels for icon-only buttons
+□ Skip navigation link for keyboard users
+□ Error messages associated with form fields
+□ Dynamic content changes announced to screen readers
+□ Video/audio has captions/transcripts
+```
+
+---
+
+## Performance Impact on Conversion
+
+```
+Check:
+□ First Contentful Paint <1.5s
+□ Time to Interactive <3.5s
+□ Largest Contentful Paint <2.5s
+□ Cumulative Layout Shift <0.1
+□ No render-blocking resources
+□ Images optimized (WebP, lazy loading)
+□ Code splitting for route chunks
+□ Service worker for offline support
+
+Performance issues directly correlate with bounce rate:
+- 1s delay = 7% conversion drop
+- 3s delay = 32% conversion drop
+- 5s delay = 90% abandonment
+```
+
+---
+
+## Analytics Setup for Conversion Tracking
+
+```typescript
+// Required events to track:
+const CONVERSION_EVENTS = {
+  page_view: "page_view",
+  wallet_connect_start: "wallet_connect_start",
+  wallet_connect_success: "wallet_connect_success",
+  wallet_connect_fail: "wallet_connect_fail",
+  tx_simulation_start: "tx_simulation_start",
+  tx_simulation_fail: "tx_simulation_fail",
+  tx_sign_start: "tx_sign_start",
+  tx_sign_success: "tx_sign_success",
+  tx_sign_fail: "tx_sign_fail",
+  tx_confirm_start: "tx_confirm_start",
+  tx_confirm_success: "tx_confirm_success",
+  tx_confirm_fail: "tx_confirm_fail",
+  error_shown: "error_shown",
+  error_retry: "error_retry",
+  cta_click: "cta_click",
+};
+
+// Funnel calculation:
+const funnel = {
+  landing_to_wallet: wallet_connect_success / page_view,
+  wallet_to_sign: tx_sign_success / wallet_connect_success,
+  sign_to_confirm: tx_confirm_success / tx_sign_success,
+  overall: tx_confirm_success / page_view,
+};
+```

@@ -27,6 +27,8 @@ Load only the file relevant to the current task. Do not load all files at once.
 | Wallet states, no-wallet education, progressive connect, wrong network | `skill/wallet-ux.md` |
 | Geyser streaming, account decoder, PostgreSQL schema, query API for dApp read layer | `skill/indexing-pipeline.md` |
 | Transaction state feedback, confirmation UX, retries, timeouts, priority fee copy | `skill/transaction-feedback-ux.md` |
+| Proposal voting, delegation, governance dashboards, DAO UX | `skill/governance-ux.md` |
+| NFT marketplace, listing/buying/bidding, collection pages, portfolio views | `skill/nft-marketplace-ux.md` |
 
 ## Always-on rules (do not wait to be asked)
 

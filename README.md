@@ -42,6 +42,7 @@ solana-ux-skill/
 ├── README.md                         # This file
 ├── CLAUDE.md                         # Claude Code configuration
 ├── LICENSE                           # MIT
+├── ecosystem-signals.md              # Cross-skill collaboration protocol
 │
 ├── skill/
 │   ├── SKILL.md                      # Sub-skill routing table
@@ -51,18 +52,17 @@ solana-ux-skill/
 │   ├── mwa-ux.md                     # React Native, MWA, auth_token persistence, Expo setup
 │   ├── ui-patterns.md                # Optimistic UI, simulation preview, skeleton states, a11y
 │   ├── indexing-pipeline.md          # Helius webhooks, gRPC streaming, real-time data flows
-│   └── transaction-feedback-ux.md    # Confirmation states, retry UX, timeout/error copy
+│   ├── transaction-feedback-ux.md    # Confirmation states, retry UX, timeout/error copy
+│   ├── governance-ux.md              # DAO voting, delegation, proposal creation, governance dashboards
+│   └── nft-marketplace-ux.md         # NFT listing/buying/bidding, collection pages, portfolio views
 │
 ├── agents/
 │   ├── ux-architect.md               # Conversion strategist — audits, funnels, benchmarks
-│   ├── blink-engineer.md             # Actions/Blinks specialist — debug, scaffold, test
-│   ├── onboarding-engineer.md        # Gasless + first-time user flow specialist
-│   └── mobile-ux-engineer.md         # MWA, Expo, React Native specialist
+│   └── blink-engineer.md             # Actions/Blinks specialist — debug, scaffold, test
 │
 ├── commands/
 │   ├── analyze-ux.md                 # /analyze-ux — scored UX audit command
-│   ├── generate-blink.md             # /generate-blink — ready-to-implement Blink spec
-│   └── audit-conversion.md           # /audit-conversion — full funnel audit with scores
+│   └── generate-blink.md             # /generate-blink — ready-to-implement Blink spec
 │
 └── rules/
     ├── ux-standards.md               # Auto-loading: wallet standard, simulation, error UX
@@ -84,13 +84,19 @@ Load agents/blink-engineer.md — my Blink works locally but not on Twitter
 Load skill/gasless-onboarding.md — new users need to complete first mint without SOL
 
 # Build mobile-native
-Load agents/mobile-ux-engineer.md — migrating from web to React Native + Expo
+Load skill/mwa-ux.md — migrating from web to React Native + Expo
 
 # Scan for UX anti-patterns
 /analyze-ux ./src
 
 # Scaffold a production Blink
 /generate-blink donate-sol --type transfer
+
+# Design governance voting UX
+Load skill/governance-ux.md — building DAO proposal voting interface
+
+# Build NFT marketplace UX
+Load skill/nft-marketplace-ux.md — NFT listing, buying, bidding patterns
 ```
 
 ---
@@ -154,7 +160,7 @@ const UI = {
 
 **Novelty:** Zero overlap with any existing skill in the kit. Blinks, gasless onboarding, mobile MWA, and conversion optimization are untouched territory.
 
-**Quality:** Every pattern ships production TypeScript. 4 agents, 3 markdown commands, 7 skill files. 130+ KB of practitioner content.
+**Quality:** Every pattern ships production TypeScript. 2 agents, 2 markdown commands, 9 skill files. 200+ KB of practitioner content.
 
 **Kit Fit:** Extends `solana-dev-skill`. Progressive SKILL.md loading. Clean agent/command/rules structure. MIT license.
 

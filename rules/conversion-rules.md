@@ -115,3 +115,231 @@ After a transaction confirms:
 - Display what changed (balance update, NFT appeared, position opened)
 - Provide a link to the transaction on Solscan/SolanaFM
 - Suggest the natural next action ("View your NFT →", "Start earning rewards →")
+```
+
+---
+
+## RULE 9: Progressive Disclosure for Complex Flows
+
+Don't show all complexity at once. Start simple, reveal advanced options.
+
+```tsx
+function StakeForm() {
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
+  return (
+    <div>
+      <SimpleStakeInput />
+      <button onClick={() => setShowAdvanced(!showAdvanced)}>
+        {showAdvanced ? "Hide" : "Show"} advanced options
+      </button>
+      {showAdvanced && <AdvancedOptions />}
+    </div>
+  );
+}
+```
+
+---
+
+## RULE 10: Social Proof on Landing Pages
+
+Build trust before asking for wallet connection.
+
+```tsx
+<div>
+  <StatsDisplay>
+    <Stat label="Total Value Locked" value="$12.5M" />
+    <Stat label="Users" value="45,000+" />
+    <Stat label="Transactions" value="1.2M" />
+  </StatsDisplay>
+  <Testimonials>
+    <Testimonial user="@crypto_user" text="Best yield on Solana!" />
+  </Testimonials>
+  <TrustBadges>
+    <Badge icon="shield" text="Audited by OtterSec" />
+    <Badge icon="check" text="Backed by Solana Foundation" />
+  </TrustBadges>
+</div>
+```
+
+---
+
+## RULE 11: Urgency and Scarcity for Time-Sensitive Actions
+
+Use countdown timers and limited supply indicators to drive action.
+
+```tsx
+function MintCountdown({ endTime }: { endTime: Date }) {
+  const [timeLeft, setTimeLeft] = useState(calculateTimeLeft(endTime));
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTimeLeft(calculateTimeLeft(endTime));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [endTime]);
+
+  return (
+    <div className="text-destructive font-medium">
+      {timeLeft.days}d {timeLeft.hours}h {timeLeft.minutes}m remaining
+    </div>
+  );
+}
+```
+
+---
+
+## RULE 12: Session Persistence for Form State
+
+Don't lose user progress on accidental refresh.
+
+```typescript
+function useFormPersistence<T>(key: string, initialState: T) {
+  const [state, setState] = useState<T>(() => {
+    const saved = localStorage.getItem(key);
+    return saved ? JSON.parse(saved) : initialState;
+  });
+
+  useEffect(() => {
+    localStorage.setItem(key, JSON.stringify(state));
+  }, [key, state]);
+
+  const clear = () => localStorage.removeItem(key);
+
+  return [state, setState, clear] as const;
+}
+```
+
+---
+
+## RULE 13: Dark Mode Support
+
+Respect user's system preference and provide manual toggle.
+
+```tsx
+function ThemeToggle() {
+  const [theme, setTheme] = useState<"light" | "dark">(() => {
+    if (typeof window !== "undefined") {
+      return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    return "light";
+  });
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", theme === "dark");
+  }, [theme]);
+
+  return (
+    <button onClick={() => setTheme(theme === "light" ? "dark" : "light")}>
+      {theme === "light" ? "🌙" : "☀️"}
+    </button>
+  );
+}
+```
+
+---
+
+## RULE 14: A/B Test Critical CTAs
+
+Never guess at button copy. Test variants and measure conversion.
+
+```typescript
+const CTA_VARIANTS = [
+  "Stake 1 SOL",
+  "Start earning 12% APY",
+  "Stake now",
+];
+
+function RandomCTA() {
+  const variant = CTA_VARIANTS[Math.floor(Math.random() * CTA_VARIANTS.length)];
+  
+  useEffect(() => {
+    analytics.track("cta_variant_shown", { variant });
+  }, [variant]);
+
+  return <Button>{variant}</Button>;
+}
+```
+
+---
+
+## RULE 15: One-Click Retry for Failed Transactions
+
+Every error must have an immediate retry path.
+
+```tsx
+function TransactionError({ error, onRetry }: { error: string; onRetry: () => void }) {
+  return (
+    <div className="space-y-3">
+      <p className="text-destructive">{error}</p>
+      <Button onClick={onRetry}>Try again</Button>
+      {error.includes("funds") && (
+        <a href="/buy-sol" className="text-primary underline">Get SOL →</a>
+      )}
+    </div>
+  );
+}
+```
+
+---
+
+## RULE 16: Show Value Before Wallet Connect
+
+Demonstrate product value in read-only mode before requiring wallet.
+
+```tsx
+function ReadOnlyDashboard() {
+  const { connected } = useWallet();
+
+  if (!connected) {
+    return (
+      <div>
+        <ProtocolStats />
+        <CTA>Connect wallet to see your positions</CTA>
+      </div>
+    );
+  }
+
+  return <UserDashboard />;
+}
+```
+
+---
+
+## RULE 17: Keyboard Navigation for All Interactions
+
+All interactive elements must be keyboard-accessible.
+
+```tsx
+<button
+  onClick={handleAction}
+  onKeyDown={(e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      handleAction();
+    }
+  }}
+  tabIndex={0}
+  role="button"
+>
+  Action
+</button>
+```
+
+---
+
+## RULE 18: Performance Budget for Conversion
+
+Slow pages kill conversion. Enforce performance budgets.
+
+```typescript
+const PERFORMANCE_BUDGETS = {
+  FCP: 1500,
+  TTI: 3500,
+  LCP: 2500,
+  CLS: 0.1,
+};
+
+if (performance.getEntriesByName("first-contentful-paint")[0]?.startTime > PERFORMANCE_BUDGETS.FCP) {
+  analytics.track("performance_violation", { metric: "FCP", value: FCP });
+}
+```

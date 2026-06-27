@@ -441,3 +441,165 @@ async function backfillAllAccounts() {
 
 backfillAllAccounts();
 ```
+
+---
+
+## Step 6: WebSocket Real-Time Updates
+
+Push updates to clients in real-time via WebSocket when indexed data changes.
+
+```typescript
+// src/websocket/server.ts
+import { WebSocketServer } from "ws";
+import { Pool } from "pg";
+
+const db = new Pool({ connectionString: process.env.DATABASE_URL });
+const wss = new WebSocketServer({ port: 8080 });
+
+wss.on("connection", (ws) => {
+  console.log("Client connected");
+
+  ws.on("message", (data) => {
+    const { type, wallet } = JSON.parse(data.toString());
+    if (type === "subscribe_wallet") {
+      db.query(`LISTEN wallet_update_${wallet}`);
+    }
+  });
+});
+
+db.on("notification", (msg) => {
+  const payload = JSON.parse(msg.payload);
+  wss.clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify(payload));
+    }
+  });
+});
+```
+
+---
+
+## Step 7: Database Triggers for Real-Time Events
+
+```sql
+-- triggers/002_realtime.sql
+
+CREATE OR REPLACE FUNCTION notify_account_update()
+RETURNS TRIGGER AS $$
+BEGIN
+  PERFORM pg_notify(
+    'account_update',
+    json_build_object(
+      'pubkey', NEW.pubkey,
+      'account_type', NEW.account_type,
+      'slot_updated', NEW.slot_updated
+    )::text
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_account_update
+  AFTER UPDATE ON program_accounts
+  FOR EACH ROW
+  EXECUTE FUNCTION notify_account_update();
+```
+
+---
+
+## Step 8: Error Handling and Retry Logic
+
+```typescript
+// src/ingest/retry.ts
+import { setTimeout } from "timers/promises";
+
+export async function withRetry<T>(
+  fn: () => Promise<T>,
+  maxRetries = 3,
+  baseDelay = 1000
+): Promise<T> {
+  let lastError: Error;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error as Error;
+      if (attempt === maxRetries) throw lastError;
+      const delay = baseDelay * Math.pow(2, attempt);
+      await setTimeout(delay);
+    }
+  }
+
+  throw lastError;
+}
+```
+
+---
+
+## Step 9: Health Monitoring and Metrics
+
+```typescript
+// src/ingest/metrics.ts
+export class IngestMetrics {
+  private accountsProcessed = 0;
+  private transactionsProcessed = 0;
+  private errors = 0;
+  private lastSlot = 0n;
+
+  recordAccount() { this.accountsProcessed++; }
+  recordTransaction() { this.transactionsProcessed++; }
+  recordError() { this.errors++; }
+  updateSlot(slot: bigint) { this.lastSlot = slot; }
+
+  getStats() {
+    return {
+      accountsProcessed: this.accountsProcessed,
+      transactionsProcessed: this.transactionsProcessed,
+      errors: this.errors,
+      lastSlot: this.lastSlot.toString(),
+      errorRate: this.errors / (this.accountsProcessed + this.transactionsProcessed),
+    };
+  }
+}
+```
+
+---
+
+## Step 10: Data Validation and Sanitization
+
+```typescript
+// src/ingest/validation.ts
+export function validateAccountUpdate(
+  pubkey: string,
+  data: Buffer,
+  slot: bigint
+): { valid: boolean; error?: string } {
+  if (!pubkey || pubkey.length !== 44) {
+    return { valid: false, error: "Invalid pubkey format" };
+  }
+  if (data.length === 0) {
+    return { valid: false, error: "Empty account data" };
+  }
+  if (slot <= 0n) {
+    return { valid: false, error: "Invalid slot number" };
+  }
+  return { valid: true };
+}
+```
+
+---
+
+## Update SKILL.md routing table
+
+This file covers: `indexing-pipeline.md`
+
+Load when:
+- Building a read layer for Solana dApps beyond RPC
+- Setting up Geyser streaming for real-time account updates
+- Designing PostgreSQL schema for indexed data
+- Implementing backfill for historical data
+- Adding WebSocket real-time updates
+- Building monitoring and metrics for indexing pipeline
+- Handling errors and retries in ingest workers
+

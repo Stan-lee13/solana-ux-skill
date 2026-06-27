@@ -243,6 +243,214 @@ export function WrongNetworkBanner() {
 
 ---
 
+## Auto-Connect Pattern (With User Consent)
+
+Auto-connect improves conversion but requires user consent. Store the preference and respect it.
+
+```typescript
+// hooks/useAutoConnect.ts
+import { useWallet } from "@solana/wallet-adapter-react";
+import { useEffect } from "react";
+
+const AUTO_CONNECT_KEY = "solana_auto_connect";
+
+export function useAutoConnect() {
+  const { connect, connected, wallet } = useWallet();
+
+  useEffect(() => {
+    const autoConnect = localStorage.getItem(AUTO_CONNECT_KEY);
+    if (autoConnect === "true" && !connected && wallet) {
+      connect().catch(console.error);
+    }
+  }, [connect, connected, wallet]);
+
+  const setAutoConnect = (enabled: boolean) => {
+    localStorage.setItem(AUTO_CONNECT_KEY, String(enabled));
+  };
+
+  return { setAutoConnect };
+}
+
+// Usage in connect button:
+// const { setAutoConnect } = useAutoConnect();
+// <Checkbox onCheckedChange={setAutoConnect}>
+//   Remember me
+// </Checkbox>
+```
+
+## Balance Check Before Transaction
+
+Check balance before building transaction to avoid building a transaction that will fail.
+
+```typescript
+// hooks/useBalanceCheck.ts
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
+
+export function useBalanceCheck() {
+  const { connection } = useConnection();
+  const { publicKey } = useWallet();
+
+  const checkBalance = async (requiredSol: number): Promise<boolean> => {
+    if (!publicKey) return false;
+
+    const balance = await connection.getBalance(publicKey);
+    const balanceSol = balance / LAMPORTS_PER_SOL;
+
+    return balanceSol >= requiredSol;
+  };
+
+  const getBalance = async (): Promise<number> => {
+    if (!publicKey) return 0;
+    const balance = await connection.getBalance(publicKey);
+    return balance / LAMPORTS_PER_SOL;
+  };
+
+  return { checkBalance, getBalance };
+}
+
+// Usage:
+// const { checkBalance } = useBalanceCheck();
+// const hasEnough = await checkBalance(0.01);
+// if (!hasEnough) {
+//   toast.error("Insufficient SOL balance");
+//   return;
+// }
+```
+
+## Network Switching UX
+
+Handle network switching gracefully with clear guidance.
+
+```tsx
+// components/NetworkSwitcher.tsx
+import { useWallet } from "@solana/wallet-adapter-react";
+import { useState } from "react";
+
+const NETWORKS = [
+  { name: "Mainnet", cluster: "mainnet-beta", rpc: process.env.NEXT_PUBLIC_MAINNET_RPC! },
+  { name: "Devnet", cluster: "devnet", rpc: process.env.NEXT_PUBLIC_DEVNET_RPC! },
+];
+
+export function NetworkSwitcher() {
+  const { connected } = useWallet();
+  const [currentNetwork, setCurrentNetwork] = useState("mainnet-beta");
+
+  const switchNetwork = async (cluster: string) => {
+    if (connected) {
+      toast.warning("Disconnect your wallet before switching networks");
+      return;
+    }
+    setCurrentNetwork(cluster);
+    // Update your RPC provider here
+  };
+
+  return (
+    <div className="flex gap-2">
+      {NETWORKS.map((net) => (
+        <button
+          key={net.cluster}
+          onClick={() => switchNetwork(net.cluster)}
+          className={`px-3 py-1 rounded text-sm ${
+            currentNetwork === net.cluster
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted hover:bg-muted/80"
+          }`}
+        >
+          {net.name}
+        </button>
+      ))}
+    </div>
+  );
+}
+```
+
+## Embedded Wallet (Privy) for No-Wallet Users
+
+For users without wallets, use embedded wallet solutions like Privy for instant onboarding.
+
+```typescript
+// hooks/usePrivyWallet.ts
+import { usePrivy } from "@privy-io/react-auth";
+
+export function usePrivyWallet() {
+  const { login, logout, authenticated, user } = usePrivy();
+
+  const connect = async () => {
+    try {
+      await login();
+    } catch (error) {
+      console.error("Privy login failed:", error);
+    }
+  };
+
+  const disconnect = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error("Privy logout failed:", error);
+    }
+  };
+
+  return {
+    connect,
+    disconnect,
+    authenticated,
+    walletAddress: user?.wallet?.address ?? null,
+  };
+}
+
+// Usage in your connect button:
+// const { connect, authenticated, walletAddress } = usePrivyWallet();
+// <Button onClick={connect}>
+//   {authenticated ? walletAddress?.slice(0, 8) : "Sign in with email"}
+// </Button>
+```
+
+## Session Recovery UX
+
+When a wallet session drops, recover gracefully without losing user context.
+
+```tsx
+// components/SessionRecoveryBanner.tsx
+import { useWallet } from "@solana/wallet-adapter-react";
+import { useEffect, useState } from "react";
+
+export function SessionRecoveryBanner() {
+  const { connected, connect } = useWallet();
+  const [showBanner, setShowBanner] = useState(false);
+  const [wasConnected, setWasConnected] = useState(false);
+
+  useEffect(() => {
+    if (connected) {
+      setWasConnected(true);
+      setShowBanner(false);
+    } else if (wasConnected) {
+      setShowBanner(true);
+    }
+  }, [connected, wasConnected]);
+
+  if (!showBanner) return null;
+
+  return (
+    <div className="fixed bottom-4 right-4 bg-card border rounded-lg shadow-lg p-4 max-w-sm">
+      <p className="font-medium">Wallet disconnected</p>
+      <p className="text-sm text-muted-foreground mb-3">
+        Your wallet session ended. Reconnect to continue.
+      </p>
+      <button
+        onClick={() => connect().catch(console.error)}
+        className="w-full bg-primary text-primary-foreground px-4 py-2 rounded text-sm font-medium"
+      >
+        Reconnect wallet
+      </button>
+    </div>
+  );
+}
+```
+
+---
+
 ## Conversion Anti-Patterns — Ranked by Drop-Off Impact
 
 ```
@@ -270,6 +478,44 @@ RANK 7 — Mobile users see desktop wallet modal (drop-off: 70% on mobile)
 
 ---
 
+## Wallet Adapter Configuration
+
+Configure wallet adapter with all supported wallets and proper settings.
+
+```typescript
+// components/WalletProvider.tsx
+import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
+import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
+import { ConnectionProvider, WalletProvider as SolanaWalletProvider } from "@solana/wallet-adapter-react";
+import { PhantomWalletAdapter, BackpackWalletAdapter, SolflareWalletAdapter } from "@solana/wallet-adapter-wallets";
+import { clusterApiUrl } from "@solana/web3.js";
+import { useMemo } from "react";
+
+const network = WalletAdapterNetwork.Mainnet;
+const endpoint = useMemo(() => clusterApiUrl(network), [network]);
+
+const wallets = useMemo(
+  () => [
+    new PhantomWalletAdapter(),
+    new BackpackWalletAdapter(),
+    new SolflareWalletAdapter(),
+  ],
+  []
+);
+
+export function WalletProvider({ children }: { children: React.ReactNode }) {
+  return (
+    <ConnectionProvider endpoint={endpoint}>
+      <SolanaWalletProvider wallets={wallets} autoConnect>
+        <WalletModalProvider>{children}</WalletModalProvider>
+      </SolanaWalletProvider>
+    </ConnectionProvider>
+  );
+}
+```
+
+---
+
 ## Update SKILL.md routing table
 
 This file covers: `wallet-ux.md`
@@ -279,3 +525,7 @@ Load when:
 - Debugging low connect rates
 - Handling edge cases (no wallet, wrong network, session expiry)
 - Designing progressive disclosure flow (value before connection)
+- Implementing auto-connect with consent
+- Adding embedded wallet (Privy) for no-wallet users
+- Building network switching UX
+- Implementing session recovery patterns

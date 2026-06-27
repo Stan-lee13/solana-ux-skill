@@ -501,3 +501,145 @@ export function WalletSelector({ onSelect }: { onSelect: (wallet: WalletInfo) =>
   );
 }
 ```
+
+---
+
+## Mobile Network Detection
+
+Handle network state changes on mobile (wifi to cellular, offline to online).
+
+```typescript
+// hooks/useMobileNetwork.ts
+import { useState, useEffect } from "react";
+import NetInfo from "@react-native-community/netinfo";
+
+export function useMobileNetwork() {
+  const [isOnline, setIsOnline] = useState(true);
+  const [networkType, setNetworkType] = useState<"wifi" | "cellular" | "unknown">("unknown");
+
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      setIsOnline(state.isConnected ?? false);
+      setNetworkType(state.type === "wifi" ? "wifi" : state.type === "cellular" ? "cellular" : "unknown");
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  return { isOnline, networkType };
+}
+```
+
+---
+
+## Mobile Offline Banner
+
+```tsx
+// components/OfflineBanner.tsx
+import { useMobileNetwork } from "@/hooks/useMobileNetwork";
+
+export function OfflineBanner() {
+  const { isOnline } = useMobileNetwork();
+
+  if (isOnline) return null;
+
+  return (
+    <View className="bg-destructive/10 p-3 items-center">
+      <Text className="text-destructive text-sm font-medium">
+        You're offline. Check your connection and try again.
+      </Text>
+    </View>
+  );
+}
+```
+
+---
+
+## Mobile Biometric Authentication
+
+Add biometric (Face ID/Touch ID) for sensitive actions on mobile.
+
+```typescript
+// hooks/useBiometricAuth.ts
+import { useState, useEffect } from "react";
+import TouchID from "react-native-touch-id";
+
+export function useBiometricAuth() {
+  const [isSupported, setIsSupported] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    TouchID.isSupported()
+      .then((biometry) => {
+        setIsSupported(biometry);
+        setIsLoading(false);
+      })
+      .catch(() => setIsLoading(false));
+  }, []);
+
+  const authenticate = async (): Promise<boolean> => {
+    if (!isSupported) return true;
+
+    try {
+      const success = await TouchID.authenticate("Authenticate to confirm transaction");
+      return success;
+    } catch (error) {
+      return false;
+    }
+  };
+
+  return { authenticate, isSupported, isLoading };
+}
+```
+
+---
+
+## Mobile Push Notifications for Transaction Updates
+
+```typescript
+// lib/mobileNotifications.ts
+import PushNotification from "react-native-push-notification";
+
+export function configurePushNotifications() {
+  PushNotification.configure({
+    onRegister: (token) => {
+      console.log("Push token:", token.token);
+    },
+    onNotification: (notification) => {
+      if (notification.data?.type === "transaction_confirmed") {
+        // Update UI
+      }
+    },
+    permissions: {
+      alert: true,
+      badge: true,
+      sound: true,
+    },
+  });
+}
+
+export function notifyTransactionConfirmed(signature: string) {
+  PushNotification.localNotification({
+    title: "Transaction Confirmed",
+    message: `Your transaction ${signature.slice(0, 8)}... has been confirmed.`,
+    userInfo: { type: "transaction_confirmed", signature },
+  });
+}
+```
+
+---
+
+## Update SKILL.md routing table
+
+This file covers: `mwa-ux.md`
+
+Load when:
+- Building React Native Solana dApps with MWA
+- Implementing mobile wallet connection flows
+- Adding auth token persistence for mobile sessions
+- Handling mobile-specific transaction confirmation UX
+- Implementing deep linking for mobile wallet integration
+- Adding mobile biometric authentication
+- Building mobile push notifications for transaction updates
+- Handling mobile network state changes
+
