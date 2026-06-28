@@ -1,4 +1,4 @@
-# Wallet UX — Connection States, Flows, and Edge Cases
+﻿# Wallet UX — Connection States, Flows, and Edge Cases
 
 > The wallet connection is the front door of your dApp.
 > Most dApps build it once and never revisit it. This file covers every state,
@@ -16,7 +16,7 @@ NO_WALLET      → User hasn't installed any wallet (needs education)
 DISCONNECTED   → Wallet exists but not connected to this dApp
 CONNECTING     → Authorization request in flight
 CONNECTED      → Wallet connected, public key available
-DISCONNECTING  → Clean disconnect in progress  
+DISCONNECTING  → Clean disconnect in progress
 SESSION_EXPIRED→ Was connected, auth token expired (needs silent re-auth)
 WRONG_NETWORK  → Connected but wrong cluster (devnet vs mainnet)
 ```
@@ -529,3 +529,5 @@ Load when:
 - Adding embedded wallet (Privy) for no-wallet users
 - Building network switching UX
 - Implementing session recovery patterns
+
+

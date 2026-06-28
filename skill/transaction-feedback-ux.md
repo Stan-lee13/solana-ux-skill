@@ -1,4 +1,4 @@
-# Transaction Feedback UX for Solana dApps
+﻿# Transaction Feedback UX for Solana dApps
 
 Transaction feedback is the highest-leverage UX layer in a Solana product.
 
@@ -1419,3 +1419,5 @@ Load `skill/gasless-onboarding.md` for fee sponsorship and no-SOL onboarding.
 Load `skill/blinks-actions.md` for Action endpoint transaction responses.
 
 Load `skill/ui-patterns.md` for broader skeletons, previews, and wallet button UI.
+
+

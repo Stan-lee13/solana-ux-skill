@@ -1,4 +1,4 @@
-# UI/UX Patterns for Solana dApps
+﻿# UI/UX Patterns for Solana dApps
 
 Production-grade UX patterns that turn confused first-timers into confident users.
 Every pattern here is paired with real code — not just advice.
@@ -177,7 +177,7 @@ export function parseTransactionError(error: unknown): string {
   // RPC / network errors
   if (msg.includes("429")) return "Too many requests. Please wait a moment.";
   if (msg.includes("blockhash not found")) return "Transaction expired. Please try again.";
-  if (msg.includes("503") || msg.includes("Network request failed")) 
+  if (msg.includes("503") || msg.includes("Network request failed"))
     return "Network error. Check your connection and try again.";
 
   // Anchor IDL errors (parse if you have the program's IDL)
@@ -757,7 +757,7 @@ export function SlippageSelector({ value, onChange }: { value: number; onChange:
   return (
     <div className="space-y-3">
       <label className="text-sm font-medium">Slippage tolerance</label>
-      
+
       <div className="flex gap-2">
         {SLIPPAGE_OPTIONS.slice(0, 3).map((option) => (
           <button
@@ -772,7 +772,7 @@ export function SlippageSelector({ value, onChange }: { value: number; onChange:
             {option.label}
           </button>
         ))}
-        
+
         <button
           onClick={() => setShowCustom(!showCustom)}
           className={`flex-1 py-2 px-3 rounded-lg border text-sm transition-colors ${
@@ -809,7 +809,7 @@ export function SlippageSelector({ value, onChange }: { value: number; onChange:
         <AlertCircle className="h-4 w-4" />
         <AlertTitle>Price impact warning</AlertTitle>
         <AlertDescription>
-          Higher slippage tolerance may result in receiving less than expected. 
+          Higher slippage tolerance may result in receiving less than expected.
           Lower tolerance may cause transactions to fail during price movement.
         </AlertDescription>
       </Alert>
@@ -843,15 +843,15 @@ export function useMultiStepTransaction() {
         approveFn,
         { buildingMessage: "Preparing approval...", successMessage: "Approved!" }
       );
-      
+
       setStep("approved");
-      
+
       setStep("executing");
       const executeSig = await trackTransaction(
         () => executeFn(approvalSig),
         { buildingMessage: "Executing transaction...", successMessage: "Transaction complete!" }
       );
-      
+
       setStep("done");
       return executeSig;
     } catch (error) {
@@ -883,13 +883,13 @@ interface Props {
   description?: string;
 }
 
-export function TransactionConfirmDialog({ 
-  open, 
-  simulation, 
-  onConfirm, 
+export function TransactionConfirmDialog({
+  open,
+  simulation,
+  onConfirm,
   onCancel,
   title,
-  description 
+  description
 }: Props) {
   if (!open || !simulation) return null;
 
@@ -1140,7 +1140,7 @@ export function ProgressBar({ progress, text }: { progress: number; text?: strin
     <div className="space-y-2">
       {text && <p className="text-sm text-muted-foreground">{text}</p>}
       <div className="h-2 bg-muted rounded-full overflow-hidden">
-        <div 
+        <div
           className="h-full bg-primary transition-all duration-300"
           style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
         />
@@ -1149,3 +1149,5 @@ export function ProgressBar({ progress, text }: { progress: number; text?: strin
   );
 }
 ```
+
+
