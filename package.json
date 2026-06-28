@@ -1,0 +1,37 @@
+{
+  "name": "solana-ux-skill",
+  "version": "1.0.0",
+  "description": "Production Solana UX patterns for AI Kit - wallet states, Blinks, gasless onboarding, mobile MWA, conversion optimization",
+  "type": "module",
+  "scripts": {
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage"
+  },
+  "devDependencies": {
+    "vitest": "^2.0.0",
+    "@vitest/ui": "^2.0.0"
+  },
+  "keywords": [
+    "solana",
+    "ux",
+    "wallet-adapter",
+    "blinks",
+    "actions",
+    "gasless",
+    "mobile-wallet-adapter",
+    "conversion",
+    "ai-kit"
+  ],
+  "author": "Victor Stanley <@Stan-lee13>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Stan-lee13/solana-ux-skill.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Stan-lee13/solana-ux-skill/issues"
+  },
+  "homepage": "https://github.com/Stan-lee13/solana-ux-skill#readme"
+}
