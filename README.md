@@ -1,4 +1,4 @@
-<p align="center">
+﻿<p align="center">
   <img src=".github/assets/banner.png" alt="Solana UX & Conversion Skill" width="100%" />
 </p>
 
@@ -28,9 +28,38 @@ A production-grade AI skill covering every layer of Solana user experience — f
 
 ## Installation
 
-Add this folder to your Solana AI Kit skills directory or copy the markdown files into your agent's skill registry.
+This skill is markdown-only for AI Kit compatibility. No npm install required.
 
-This package is markdown-only for AI Kit compatibility.
+### For Claude Code / AI Kit
+
+1. Clone this repository:
+```bash
+git clone https://github.com/Stan-lee13/solana-ux-skill.git
+```
+
+2. Add to your AI Kit skills directory:
+```bash
+cp -r solana-ux-skill /path/to/your/ai-kit/skills/
+```
+
+3. The skill will auto-load when you mention Solana UX topics in your prompts.
+
+### For Manual Integration
+
+Copy individual markdown files to your agent's skill registry:
+- `skill/*.md` → Sub-skill patterns
+- `agents/*.md` → Agent configurations
+- `commands/*.md` → Slash commands
+- `rules/*.md` → Auto-loading rules
+
+### Verification
+
+Test the skill is loaded by asking:
+```
+Load skill/wallet-ux.md — show me the 8 wallet states
+```
+
+Expected response: The agent should load the file and display the wallet state machine.
 
 ---
 
@@ -64,9 +93,18 @@ solana-ux-skill/
 │   ├── analyze-ux.md                 # /analyze-ux — scored UX audit command
 │   └── generate-blink.md             # /generate-blink — ready-to-implement Blink spec
 │
-└── rules/
-    ├── ux-standards.md               # Auto-loading: wallet standard, simulation, error UX
-    └── conversion-rules.md           # Auto-loading: conversion benchmarks, anti-patterns
+├── rules/
+│   ├── ux-standards.md               # Auto-loading: wallet standard, simulation, error UX
+│   └── conversion-rules.md           # Auto-loading: conversion benchmarks, anti-patterns
+│
+├── tests/
+│   ├── wallet-state.test.ts          # Vitest tests for wallet state patterns
+│   ├── ui-patterns.test.ts           # Vitest tests for UI patterns
+│   └── blinks-actions.test.ts        # Vitest tests for Blinks/Actions
+│
+└── diagrams/
+    ├── wallet-state-machine.md        # Mermaid diagram for wallet state transitions
+    └── transaction-flow.md           # Mermaid diagram for transaction flow
 ```
 
 ---
@@ -97,7 +135,32 @@ Load skill/governance-ux.md — building DAO proposal voting interface
 
 # Build NFT marketplace UX
 Load skill/nft-marketplace-ux.md — NFT listing, buying, bidding patterns
+
+# Run tests
+vitest tests/
 ```
+
+---
+
+## Testing
+
+The skill includes Vitest tests for key patterns:
+
+```bash
+# Install test dependencies
+npm install -D vitest
+
+# Run all tests
+npm test
+
+# Run specific test file
+npm test wallet-state.test.ts
+```
+
+Test coverage:
+- Wallet state machine transitions
+- UI patterns (priority fees, slippage, multi-step flows)
+- Blinks/Actions CORS and response structures
 
 ---
 
@@ -160,7 +223,7 @@ const UI = {
 
 **Novelty:** Zero overlap with any existing skill in the kit. Blinks, gasless onboarding, mobile MWA, and conversion optimization are untouched territory.
 
-**Quality:** Every pattern ships production TypeScript. 2 agents, 2 markdown commands, 9 skill files. 200+ KB of practitioner content.
+**Quality:** Every pattern ships production TypeScript. 2 agents, 2 markdown commands, 9 skill files, 3 test files, 2 diagrams. 250+ KB of practitioner content.
 
 **Kit Fit:** Extends `solana-dev-skill`. Progressive SKILL.md loading. Clean agent/command/rules structure. MIT license.
 
@@ -173,3 +236,5 @@ MIT — free to use, submodule, or extend.
 ## Author
 
 Built by Victor Stanley ([@Stan-lee13](https://github.com/Stan-lee13)) for the Superteam Earn Solana AI Kit bounty.
+
+
