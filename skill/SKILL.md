@@ -29,6 +29,9 @@ Load only the file relevant to the current task. Do not load all files at once.
 | Transaction state feedback, confirmation UX, retries, timeouts, priority fee copy | `skill/transaction-feedback-ux.md` |
 | Proposal voting, delegation, governance dashboards, DAO UX | `skill/governance-ux.md` |
 | NFT marketplace, listing/buying/bidding, collection pages, portfolio views | `skill/nft-marketplace-ux.md` |
+| Building a wallet: keypair mgmt, BIP39, hardware wallets, MPC, server signing | `skill/wallet-building.md` |
+| Node operator dashboard: fleet table, earnings, slash alerts, heartbeat monitor | `skill/depin-dashboard-ux.md` |
+| Bundle size, RPC batching, lazy loading, render optimization, Core Web Vitals | `skill/performance-optimization.md` |
 
 ## Always-on rules (do not wait to be asked)
 
@@ -76,3 +79,4 @@ Most Solana dev resources stop at "technically works." This skill covers:
 ✅ MWA auth_token persisted in AsyncStorage (mobile)
 ✅ Optimistic UI for expected-success operations
 ```
+
