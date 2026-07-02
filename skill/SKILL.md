@@ -30,6 +30,7 @@ Load only the file relevant to the current task. Do not load all files at once.
 | Proposal voting, delegation, governance dashboards, DAO UX | `skill/governance-ux.md` |
 | NFT marketplace, listing/buying/bidding, collection pages, portfolio views | `skill/nft-marketplace-ux.md` |
 | Building a wallet: keypair mgmt, BIP39, hardware wallets, MPC, server signing | `skill/wallet-building.md` |
+| Wallet architecture philosophy: threat model, progressive security tiers, signing-oracle design, cross-skill security integration | `skill/wallet-engineering.md` |
 | Node operator dashboard: fleet table, earnings, slash alerts, heartbeat monitor | `skill/depin-dashboard-ux.md` |
 | Bundle size, RPC batching, lazy loading, render optimization, Core Web Vitals | `skill/performance-optimization.md` |
 

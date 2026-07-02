@@ -44,6 +44,12 @@ Load the specific file based on what the user is building:
 | Wallet states, no-wallet education, progressive connect, wrong network | `skill/wallet-ux.md` |
 | Geyser streaming, account decoder, PostgreSQL schema, query API | `skill/indexing-pipeline.md` |
 | Transaction state feedback, confirmations, retries, timeouts | `skill/transaction-feedback-ux.md` |
+| Keypair mgmt, BIP39, hardware wallets (Ledger/Trezor), MPC, server signing | `skill/wallet-building.md` |
+| Wallet architecture philosophy, threat model, signing-oracle design | `skill/wallet-engineering.md` |
+| DAO voting, Realms, delegation, vote-escrow locking | `skill/governance-ux.md` |
+| NFT listing/bidding, collection browsers, compressed NFTs, royalties | `skill/nft-marketplace-ux.md` |
+| DePIN node operator dashboards, coverage maps, reward tracking | `skill/depin-dashboard-ux.md` |
+| RPC batching, bundle size, lazy loading, Core Web Vitals | `skill/performance-optimization.md` |
 
 ## Agent Routing
 
@@ -51,6 +57,8 @@ Load the specific file based on what the user is building:
 |------|-------|-------|
 | UX audits, flow design, accessibility | `ux-architect` | opus |
 | Blink scaffolding, Action API, testing | `blink-engineer` | sonnet |
+| First-time user flows, gasless 0-SOL onboarding, wallet install funnels | `onboarding-engineer` | sonnet |
+| React Native + Expo + MWA implementation, deep link architecture | `mobile-ux-engineer` | sonnet |
 
 ## Commands
 
@@ -58,6 +66,7 @@ Load the specific file based on what the user is building:
 |---------|-------------|
 | `/analyze-ux` | Audit source directory for UX anti-patterns |
 | `/generate-blink` | Scaffold a new Solana Action/Blink |
+| `/audit-conversion` | Full wallet-connect → tx-completion funnel audit with prioritized fix list |
 
 ## Rules (Auto-loaded)
 
@@ -106,27 +115,51 @@ export async function OPTIONS(req: Request) // CORS preflight — required
 
 ```
 solana-ux-skill/
-├── CLAUDE.md                     # This file — Claude configuration
-├── README.md                     # User documentation
-├── LICENSE                       # MIT
+├── SKILL.md                       # Root progressive loader — start here
+├── AGENTS.md                      # Codex/coding-agent configuration
+├── CLAUDE.md                      # This file — Claude configuration
+├── README.md                      # User documentation
+├── CONTRIBUTING.md                # Contribution guide
+├── SECURITY.md                    # Security policy + A1-A8 threat model reference
+├── CHANGELOG.md                   # Version history
+├── LICENSE                        # MIT
+├── ecosystem-signals.md           # Cross-skill event protocol (5-skill ecosystem)
+├── wallet-framework.md            # Shared wallet security framework (A1-A8 threat model)
+├── package.json / tsconfig.json / vitest.config.ts
 ├── skill/
-│   ├── SKILL.md                 # Entry point + routing
-│   ├── blinks-actions.md        # Actions API, Blink embedding, chaining
-│   ├── gasless-onboarding.md    # Fee payer proxy, Solana Pay, abuse prevention
-│   ├── mwa-ux.md                # React Native, MWA, auth persistence
-│   ├── ui-patterns.md           # Optimistic UI, simulation, errors, wallet button
-│   ├── wallet-ux.md             # Wallet state machine, wrong network, recovery
-│   ├── indexing-pipeline.md     # Real-time read layer, indexers, webhooks
-│   └── transaction-feedback-ux.md # Confirmation states, retry UX, timeout/error copy
+│   ├── SKILL.md                  # Nested entry point + routing
+│   ├── blinks-actions.md         # Actions API, Blink embedding, chaining
+│   ├── gasless-onboarding.md     # Fee payer proxy, Solana Pay, abuse prevention
+│   ├── mwa-ux.md                 # React Native, MWA, auth persistence
+│   ├── ui-patterns.md            # Optimistic UI, simulation, errors, wallet button
+│   ├── wallet-ux.md              # Wallet state machine, wrong network, recovery
+│   ├── wallet-building.md        # Keypair mgmt, BIP39, hardware wallets, MPC
+│   ├── wallet-engineering.md     # Wallet architecture philosophy, threat model
+│   ├── indexing-pipeline.md      # Real-time read layer, indexers, webhooks
+│   ├── transaction-feedback-ux.md # Confirmation states, retry UX, timeout/error copy
+│   ├── governance-ux.md          # DAO voting, Realms, delegation UX
+│   ├── nft-marketplace-ux.md     # Listing/bidding, collections, royalties
+│   ├── depin-dashboard-ux.md     # Node operator dashboards, coverage maps
+│   └── performance-optimization.md # RPC batching, bundle size, Core Web Vitals
 ├── agents/
-│   ├── ux-architect.md          # UX auditor + flow designer
-│   └── blink-engineer.md        # Blink/Action builder
+│   ├── ux-architect.md           # UX auditor + flow designer
+│   ├── blink-engineer.md         # Blink/Action builder
+│   ├── onboarding-engineer.md    # First-time user flow specialist
+│   └── mobile-ux-engineer.md     # React Native + Expo + MWA specialist
 ├── commands/
-│   ├── analyze-ux.md            # UX audit command
-│   └── generate-blink.md        # Blink specification command
-└── rules/
-    ├── ux-standards.md          # Wallet Standard, MWA, accessibility
-    └── conversion-rules.md      # Gasless, simulation, error UX
+│   ├── analyze-ux.md             # UX audit command
+│   ├── generate-blink.md         # Blink specification command
+│   └── audit-conversion.md       # Conversion funnel audit command
+├── diagrams/
+│   ├── wallet-state-machine.md
+│   └── transaction-flow.md
+├── rules/
+│   ├── ux-standards.md           # Wallet Standard, MWA, accessibility
+│   └── conversion-rules.md       # Gasless, simulation, error UX
+└── tests/
+    ├── wallet-state.test.ts + wallet-state.ts       # 28 tests
+    ├── ui-patterns.test.ts + ui-patterns.ts         # 22 tests
+    └── blinks-actions.test.ts + blinks-actions.ts   # 17 tests
 ```
 
 ---

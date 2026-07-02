@@ -1,80 +1,11 @@
-import { describe, it, expect, vi } from "vitest";
-import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-// Simulates the optimistic balance hook logic
-function createOptimisticBalanceManager(initialBalance: number) {
-  let balance = initialBalance;
-  let isPending = false;
-
-  return {
-    getBalance: () => balance,
-    isPending: () => isPending,
-    executeWithOptimism: async (
-      amount: number,
-      action: () => Promise<void>,
-      options: { shouldFail?: boolean; realBalance?: number } = {}
-    ) => {
-      const prevBalance = balance;
-      balance -= amount;
-      isPending = true;
-      try {
-        if (options.shouldFail) throw new Error("TX failed");
-        await action();
-        // Sync real balance after confirm
-        if (options.realBalance !== undefined) balance = options.realBalance;
-        isPending = false;
-      } catch (e) {
-        balance = prevBalance; // rollback
-        isPending = false;
-        throw e;
-      }
-    },
-  };
-}
-
-// Simulates Solana error classifier
-function classifySolanaError(errorMessage: string): {
-  userMessage: string;
-  shouldRetry: boolean;
-  severity: string;
-} {
-  if (errorMessage.includes("0x1") || errorMessage.includes("insufficient lamports")) {
-    return { userMessage: "Insufficient balance for this transaction", shouldRetry: false, severity: "error" };
-  }
-  if (errorMessage.includes("blockhash not found") || errorMessage.includes("Blockhash not found")) {
-    return { userMessage: "Transaction expired. Please try again.", shouldRetry: true, severity: "warning" };
-  }
-  if (errorMessage.includes("User rejected") || errorMessage.includes("Transaction cancelled")) {
-    return { userMessage: "Transaction cancelled", shouldRetry: false, severity: "info" };
-  }
-  if (errorMessage.includes("0x1770") || errorMessage.includes("slippage")) {
-    return { userMessage: "Price moved too much. Increase slippage tolerance or try again.", shouldRetry: true, severity: "warning" };
-  }
-  if (errorMessage.includes("rate limit") || errorMessage.includes("429")) {
-    return { userMessage: "Too many requests. Please wait a moment.", shouldRetry: true, severity: "warning" };
-  }
-  return { userMessage: "Transaction failed. Please try again.", shouldRetry: true, severity: "error" };
-}
-
-// Priority fee calculator (from skill/ui-patterns.md)
-function calculatePriorityFee(
-  congestionLevel: "low" | "medium" | "high" | "critical",
-  baseMicroLamports = 1_000
-): { microLamports: number; estimatedCostSOL: number; label: string } {
-  const multipliers = { low: 1, medium: 5, high: 25, critical: 100 };
-  const microLamports = baseMicroLamports * multipliers[congestionLevel];
-  // 200K CU default × microLamports / 1_000_000 = lamports
-  const estimatedCostSOL = (200_000 * microLamports) / 1_000_000 / LAMPORTS_PER_SOL;
-  const labels = {
-    low: "Economy — may be slow",
-    medium: "Standard — typical speed",
-    high: "Fast — priority processing",
-    critical: "Turbo — immediate inclusion",
-  };
-  return { microLamports, estimatedCostSOL, label: labels[congestionLevel] };
-}
+import { describe, it, expect } from "vitest";
+import {
+  createOptimisticBalanceManager,
+  classifySolanaError,
+  calculatePriorityFee,
+  validateSlippage,
+  createTxQueue,
+} from "./ui-patterns";
 
 // ─── Optimistic UI Tests ───────────────────────────────────────────────────────
 
@@ -189,15 +120,6 @@ describe("Priority Fee UX — correct calculation and display", () => {
 // ─── Slippage Validation Tests ─────────────────────────────────────────────────
 
 describe("Slippage Tolerance — validation and UX", () => {
-  const validateSlippage = (bps: number): { valid: boolean; warning?: string } => {
-    if (!Number.isFinite(bps) || bps < 0) return { valid: false };
-    if (bps === 0) return { valid: false }; // zero slippage always fails on-chain
-    if (bps < 10) return { valid: true, warning: "Very tight slippage — transaction likely to fail" };
-    if (bps > 500) return { valid: true, warning: "High slippage — you may receive significantly less" };
-    if (bps > 1000) return { valid: false }; // > 10% = reject
-    return { valid: true };
-  };
-
   it("validates 0.5% slippage (50 bps) as acceptable", () => {
     expect(validateSlippage(50).valid).toBe(true);
   });
@@ -227,29 +149,6 @@ describe("Slippage Tolerance — validation and UX", () => {
 // ─── Transaction Queue Tests ───────────────────────────────────────────────────
 
 describe("Transaction Queue — multi-step flow management", () => {
-  type TxStatus = "pending" | "signing" | "submitted" | "confirmed" | "failed";
-  interface TxQueueItem { id: string; status: TxStatus; description: string }
-
-  function createTxQueue(items: TxQueueItem[]) {
-    const queue = [...items];
-    return {
-      getAll: () => queue,
-      getActive: () => queue.find((t) => t.status === "signing" || t.status === "submitted"),
-      getPending: () => queue.filter((t) => t.status === "pending"),
-      getCompleted: () => queue.filter((t) => t.status === "confirmed"),
-      getFailed: () => queue.filter((t) => t.status === "failed"),
-      advance: (id: string, status: TxStatus) => {
-        const item = queue.find((t) => t.id === id);
-        if (item) item.status = status;
-      },
-      canProceed: () => !queue.some((t) => t.status === "failed"),
-      progressPct: () => {
-        const done = queue.filter((t) => t.status === "confirmed").length;
-        return (done / queue.length) * 100;
-      },
-    };
-  }
-
   it("processes transactions in order — first pending first", () => {
     const queue = createTxQueue([
       { id: "tx-1", status: "pending", description: "Approve" },

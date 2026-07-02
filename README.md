@@ -7,7 +7,7 @@
 *Wallet integration · Transaction feedback · Gasless onboarding · Blinks/Actions · Mobile (MWA 2.0) · DePIN dashboards · Governance UX · Performance optimization*
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-38_passing-brightgreen?style=flat-square)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-67_passing-brightgreen?style=flat-square)](tests/)
 [![Skills](https://img.shields.io/badge/Skill_files-14-8B5CF6?style=flat-square)](skill/)
 [![Agents](https://img.shields.io/badge/Agents-4-orange?style=flat-square)](agents/)
 [![Commands](https://img.shields.io/badge/Commands-3-yellow?style=flat-square)](commands/)
@@ -45,17 +45,17 @@ TYPICAL SOLANA dAPP FUNNEL (2026 data):
 # Install
 bash <(curl -fsSL https://raw.githubusercontent.com/Stan-lee13/solana-ux-skill/main/install.sh)
 
-# Run 38 tests across 3 test suites — zero setup
+# Run 67 tests across 3 test suites — zero setup
 cd .claude/skills/solana-ux-skill
 npm install
 npx vitest run
 
 # Output:
-# ✓ tests/wallet-state.test.ts     (12 tests)  — wallet state machine
-# ✓ tests/ui-patterns.test.ts      (15 tests)  — component patterns
-# ✓ tests/blinks-actions.test.ts   (11 tests)  — Blinks/Actions spec
+# ✓ tests/wallet-state.test.ts     (28 tests)  — wallet state machine
+# ✓ tests/ui-patterns.test.ts      (22 tests)  — component patterns
+# ✓ tests/blinks-actions.test.ts   (17 tests)  — Blinks/Actions spec
 # Test Files: 3 passed (3)
-# Tests:      38 passed (38)
+# Tests:      67 passed (67)
 ```
 
 ---
@@ -113,9 +113,9 @@ solana-ux-skill/
 │   └── audit-conversion.md            ← /audit-conversion: funnel drop-off analysis
 │
 ├── tests/
-│   ├── wallet-state.test.ts           ← 12 wallet state machine tests ← run these
-│   ├── ui-patterns.test.ts            ← 15 UI pattern tests
-│   └── blinks-actions.test.ts         ← 11 Blinks/Actions tests
+│   ├── wallet-state.test.ts           ← 28 wallet state machine tests ← run these
+│   ├── ui-patterns.test.ts            ← 22 UI pattern tests
+│   └── blinks-actions.test.ts         ← 17 Blinks/Actions tests
 │
 ├── diagrams/
 │   ├── transaction-flow.md            ← Transaction lifecycle diagram
@@ -144,8 +144,8 @@ RPC call batching strategies (`getMultipleAccounts` vs individual calls), bundle
 **4. Wallet security wired into the UX layer** (`skill/wallet-engineering.md`)
 Transaction intent verification (hard-blocks unauthorized `SetAuthority` instructions before signing), address validation with entropy checks, clipboard hijacking protection, and phishing domain detection built into the connection flow. Security isn't a separate concern — it's embedded in every UX pattern.
 
-**5. 38 passing tests as living documentation** (`tests/`)
-Three test suites cover the wallet state machine (12 tests), UI pattern behavior (15 tests), and Blinks/Actions spec compliance (11 tests). These aren't demo tests — they validate the exact state transitions and error paths that ship in production. A judge can clone the repo and run `npx vitest run` in 30 seconds.
+**5. 67 passing tests as living documentation** (`tests/`)
+Three test suites cover the wallet state machine (28 tests), UI pattern behavior (22 tests), and Blinks/Actions spec compliance (17 tests). These aren't demo tests — they validate the exact state transitions and error paths that ship in production. A judge can clone the repo and run `npx vitest run` in 30 seconds.
 
 ---
 
@@ -187,6 +187,6 @@ bash <(curl -fsSL https://raw.githubusercontent.com/Stan-lee13/solana-ux-skill/m
 
 MIT License · Built for the [Superteam Earn Solana AI Kit Bounty](https://earn.superteam.fun)
 
-*37 files · 509KB · 14 skill docs · 4 agents · 3 commands · 38 passing tests*
+*43 files · 513KB · 14 skill docs · 4 agents · 3 commands · 67 passing tests*
 
 </div>

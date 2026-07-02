@@ -1,55 +1,7 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { Keypair, PublicKey } from "@solana/web3.js";
-
-// ─── Wallet State Machine ──────────────────────────────────────────────────────
-
-type WalletState =
-  | "undetected"
-  | "no-wallet"
-  | "disconnected"
-  | "connecting"
-  | "connected"
-  | "disconnecting"
-  | "session-expired"
-  | "wrong-network";
-
-function deriveWalletState({
-  hasWindowSolana,
-  hasWalletExtension,
-  connected,
-  connecting,
-  disconnecting,
-  publicKey,
-  currentCluster,
-  expectedCluster,
-  lastActivityMs,
-  sessionTimeoutMs = 30 * 60 * 1000,
-}: {
-  hasWindowSolana: boolean;
-  hasWalletExtension: boolean;
-  connected: boolean;
-  connecting: boolean;
-  disconnecting: boolean;
-  publicKey: string | null;
-  currentCluster: string;
-  expectedCluster: string;
-  lastActivityMs: number;
-  sessionTimeoutMs?: number;
-}): WalletState {
-  if (!hasWindowSolana && !hasWalletExtension) return "undetected";
-  if (hasWindowSolana && !hasWalletExtension) return "no-wallet";
-  if (disconnecting) return "disconnecting";
-  if (connecting) return "connecting";
-  if (!connected || !publicKey) return "disconnected";
-
-  // Session expiry check
-  if (Date.now() - lastActivityMs > sessionTimeoutMs) return "session-expired";
-
-  // Network check
-  if (currentCluster !== expectedCluster) return "wrong-network";
-
-  return "connected";
-}
+import { describe, it, expect } from "vitest";
+import { Keypair } from "@solana/web3.js";
+import type { WalletState } from "./wallet-state";
+import { deriveWalletState, checkCanTransact, assessSessionRecovery, uiForState, CLUSTER_GENESIS_HASHES, validateGaslessTransaction } from "./wallet-state";
 
 describe("Wallet State Machine — all 8 states", () => {
   const BASE_PROPS = {
@@ -175,22 +127,6 @@ describe("Auto-Connect — consent and persistence", () => {
 // ─── Balance Guard Tests ───────────────────────────────────────────────────────
 
 describe("Balance Guard — pre-transaction validation", () => {
-  function checkCanTransact(
-    balanceLamports: number,
-    requiredLamports: number,
-    estimatedFeeLamports = 5_000
-  ): { canTransact: boolean; shortfall: number; reason?: string } {
-    const total = requiredLamports + estimatedFeeLamports;
-    if (balanceLamports < total) {
-      return {
-        canTransact: false,
-        shortfall: total - balanceLamports,
-        reason: `Insufficient balance: need ${total} lamports, have ${balanceLamports}`,
-      };
-    }
-    return { canTransact: true, shortfall: 0 };
-  }
-
   it("allows transaction when balance covers amount + fee", () => {
     const result = checkCanTransact(1_000_000, 990_000, 5_000);
     expect(result.canTransact).toBe(true);
@@ -218,17 +154,6 @@ describe("Balance Guard — pre-transaction validation", () => {
 // ─── Session Recovery Tests ────────────────────────────────────────────────────
 
 describe("Session Recovery — silent re-authorization", () => {
-  function assessSessionRecovery(
-    lastActivityMs: number,
-    sessionTimeoutMs: number,
-    hasStoredToken: boolean
-  ): "active" | "silent-recover" | "full-reconnect" {
-    const elapsed = Date.now() - lastActivityMs;
-    if (elapsed < sessionTimeoutMs) return "active";
-    if (elapsed < sessionTimeoutMs * 2 && hasStoredToken) return "silent-recover";
-    return "full-reconnect";
-  }
-
   it("active session within timeout needs no recovery", () => {
     const tenMinutes = 10 * 60 * 1000;
     const timeout = 30 * 60 * 1000;
@@ -249,12 +174,6 @@ describe("Session Recovery — silent re-authorization", () => {
 
   it("shows re-auth prompt instead of blank screen on session-expired state", () => {
     // The correct UX: don't show empty wallet state, show "reconnect" CTA
-    const uiForState = (state: WalletState) => {
-      if (state === "session-expired") return "reconnect-prompt";
-      if (state === "disconnected") return "connect-button";
-      if (state === "connected") return "wallet-info";
-      return "loading";
-    };
     expect(uiForState("session-expired")).toBe("reconnect-prompt");
     expect(uiForState("disconnected")).not.toBe("reconnect-prompt");
   });
@@ -263,12 +182,6 @@ describe("Session Recovery — silent re-authorization", () => {
 // ─── Wrong Network Recovery Tests ─────────────────────────────────────────────
 
 describe("Wrong Network — detection and recovery UX", () => {
-  const CLUSTER_GENESIS_HASHES: Record<string, string> = {
-    "mainnet-beta": "5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d",
-    "devnet":       "EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG",
-    "testnet":      "4uhcVJyU9pJkvQyS88uRDiswHXSCkY3zQawwpjk2NsNY",
-  };
-
   it("detects wrong network by genesis hash comparison", () => {
     const currentHash = CLUSTER_GENESIS_HASHES["devnet"];
     const expectedHash = CLUSTER_GENESIS_HASHES["mainnet-beta"];
@@ -284,7 +197,7 @@ describe("Wrong Network — detection and recovery UX", () => {
 
   it("wrong-network UX blocks transaction but keeps wallet connected", () => {
     // User should stay connected — just need to switch network
-    const state: WalletState = "wrong-network";
+    const state = "wrong-network" as WalletState;
     const canInitiateTransaction = state === "connected";
     const isWalletConnected = state !== "disconnected" && state !== "undetected";
     expect(canInitiateTransaction).toBe(false);
@@ -295,19 +208,6 @@ describe("Wrong Network — detection and recovery UX", () => {
 // ─── Gasless Proxy Tests ───────────────────────────────────────────────────────
 
 describe("Gasless Proxy — instruction whitelisting", () => {
-  const ALLOWED_PROGRAMS = new Set([
-    "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
-    "11111111111111111111111111111111",
-    "YourProtocolProgramIdHere11111111111111111111",
-  ]);
-
-  function validateGaslessTransaction(
-    programIds: string[]
-  ): { allowed: boolean; blockedPrograms: string[] } {
-    const blocked = programIds.filter((p) => !ALLOWED_PROGRAMS.has(p));
-    return { allowed: blocked.length === 0, blockedPrograms: blocked };
-  }
-
   it("allows transaction with only whitelisted programs", () => {
     const result = validateGaslessTransaction([
       "11111111111111111111111111111111",

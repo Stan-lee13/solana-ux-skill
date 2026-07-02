@@ -1,46 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL, Keypair } from "@solana/web3.js";
-
-// ─── Test helpers ──────────────────────────────────────────────────────────────
-
-const ACTIONS_CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
-  "Access-Control-Max-Age": "86400",
-};
-
-function buildTransferTransaction(
-  fromPubkey: PublicKey,
-  toPubkey: PublicKey,
-  lamports: number,
-  recentBlockhash: string
-): Transaction {
-  const tx = new Transaction();
-  tx.add(SystemProgram.transfer({ fromPubkey, toPubkey, lamports }));
-  tx.recentBlockhash = recentBlockhash;
-  tx.feePayer = fromPubkey;
-  return tx;
-}
-
-function buildActionGetResponse(overrides: Partial<Record<string, unknown>> = {}) {
-  return {
-    icon: "https://example.com/icon.png",
-    title: "Stake SOL",
-    description: "Stake your SOL to earn rewards",
-    label: "Stake Now",
-    links: {
-      actions: [
-        { label: "Stake 1 SOL", href: "/api/actions/stake?amount=1" },
-        { label: "Stake 5 SOL", href: "/api/actions/stake?amount=5" },
-        { label: "Custom Amount", href: "/api/actions/stake?amount={amount}", parameters: [
-          { name: "amount", label: "Amount (SOL)", type: "number" }
-        ]},
-      ],
-    },
-    ...overrides,
-  };
-}
+import { describe, it, expect } from "vitest";
+import { PublicKey, LAMPORTS_PER_SOL, Keypair } from "@solana/web3.js";
+import {
+  ACTIONS_CORS_HEADERS,
+  buildTransferTransaction,
+  buildActionGetResponse,
+  validateAmount,
+} from "./blinks-actions";
 
 // ─── CORS Header Tests ─────────────────────────────────────────────────────────
 
@@ -102,8 +67,9 @@ describe("Action GET Response — schema validation", () => {
       typeof a.href === "string" && a.href.includes("{amount}")
     );
     expect(parameterizedAction).toBeDefined();
+    if (!parameterizedAction) throw new Error("unreachable — asserted above");
     expect(parameterizedAction.parameters).toBeDefined();
-    expect(parameterizedAction.parameters[0].name).toBe("amount");
+    expect((parameterizedAction.parameters as Array<{ name: string }>)[0].name).toBe("amount");
   });
 
   it("title and description are within display limits", () => {
@@ -155,12 +121,6 @@ describe("Action POST Response — transaction building", () => {
   });
 
   it("validates amount bounds — rejects zero and negative amounts", () => {
-    const validateAmount = (amount: number) => {
-      if (!Number.isFinite(amount)) throw new Error("Amount must be a finite number");
-      if (amount <= 0) throw new Error("Amount must be positive");
-      if (amount > 1_000_000) throw new Error("Amount exceeds maximum");
-      return amount;
-    };
     expect(() => validateAmount(0)).toThrow("Amount must be positive");
     expect(() => validateAmount(-1)).toThrow("Amount must be positive");
     expect(() => validateAmount(Infinity)).toThrow("finite number");
@@ -231,7 +191,6 @@ describe("actions.json — domain registration", () => {
   });
 
   it("wildcard rule matches nested action paths", () => {
-    const pattern = "/api/actions/**";
     const testPaths = [
       "/api/actions/stake",
       "/api/actions/stake/confirm",

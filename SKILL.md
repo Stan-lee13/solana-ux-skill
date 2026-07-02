@@ -208,9 +208,9 @@ CROSS-SKILL TRIGGERS:
 ## Test Coverage
 
 ```bash
-npx vitest run tests/wallet-state.test.ts     # 12 wallet state machine tests
-npx vitest run tests/ui-patterns.test.ts      # 15 UI pattern tests
-npx vitest run tests/blinks-actions.test.ts   # 11 Blinks/Actions tests
+npx vitest run tests/wallet-state.test.ts     # 28 wallet state machine tests
+npx vitest run tests/ui-patterns.test.ts      # 22 UI pattern tests
+npx vitest run tests/blinks-actions.test.ts   # 17 Blinks/Actions tests
 npx vitest run --coverage                     # full coverage report
 ```
 
